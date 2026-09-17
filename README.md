@@ -38,15 +38,19 @@ how real-world software systems are designed, deployed, and maintained.
 
 <div align="center">
 
-<img src="./generated/languages.svg" alt="Languages" />
+<!-- LANGUAGES_START -->
+Loading...
+<!-- LANGUAGES_END -->
 
 </div>
 
-### Frameworks & Libraries
+### Frameworks & Technologies
 
 <div align="center">
 
-<img src="./generated/frameworks.svg" alt="Frameworks" />
+<!-- FRAMEWORKS_START -->
+Loading...
+<!-- FRAMEWORKS_END -->
 
 </div>
 
