@@ -79,3 +79,21 @@ SVG Generation
      │
      ▼
 README Update
+
+
+<!-- LANGUAGES_START -->
+<div align="center">
+
+<img src="./generated/languages.svg?v=2" alt="Languages" />
+
+</div>
+<!-- LANGUAGES_END -->
+
+
+<!-- FRAMEWORKS_START -->
+<div align="center">
+
+<img src="./generated/frameworks.svg?v=2" alt="Frameworks & Technologies" />
+
+</div>
+<!-- FRAMEWORKS_END -->
