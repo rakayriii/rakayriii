@@ -1,258 +1,27 @@
-import json
 import os
 import re
-import urllib.request
-import urllib.parse
+import json
 import base64
-from collections import Counter
+import urllib.request
 from pathlib import Path
+from html import escape
 
+
+# ============================================================
+# CONFIG
+# ============================================================
 
 USERNAME = "rakayriii"
-API = "https://api.github.com"
-TOKEN = os.environ.get("GITHUB_TOKEN")
 
-HEADERS = {
-    "Accept": "application/vnd.github+json",
-    "Authorization": f"Bearer {TOKEN}",
-    "X-GitHub-Api-Version": "2022-11-28",
-    "User-Agent": "rakayriii-tech-stack-generator",
-}
+API_BASE = "https://api.github.com"
 
+OUTPUT_DIR = Path("generated")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# =========================================================
-# GITHUB API
-# =========================================================
 
-def github_get(url):
-    request = urllib.request.Request(url, headers=HEADERS)
-
-    with urllib.request.urlopen(request) as response:
-        return json.loads(response.read().decode("utf-8"))
-
-
-def get_repositories():
-    repositories = []
-    page = 1
-
-    while True:
-        url = (
-            f"{API}/users/{USERNAME}/repos"
-            f"?per_page=100&page={page}&sort=updated"
-        )
-
-        data = github_get(url)
-
-        if not data:
-            break
-
-        repositories.extend(data)
-
-        if len(data) < 100:
-            break
-
-        page += 1
-
-    return [
-        repo
-        for repo in repositories
-        if not repo["fork"]
-        and not repo["archived"]
-        and repo["name"] != USERNAME
-    ]
-
-
-def get_languages(repo):
-    url = f"{API}/repos/{USERNAME}/{repo['name']}/languages"
-
-    try:
-        return github_get(url)
-    except Exception as error:
-        print(f"Language error: {repo['name']} -> {error}")
-        return {}
-
-
-def get_root_files(repo):
-    url = f"{API}/repos/{USERNAME}/{repo['name']}/contents"
-
-    try:
-        data = github_get(url)
-
-        if not isinstance(data, list):
-            return {}
-
-        return {
-            item["name"].lower(): item
-            for item in data
-            if item["type"] == "file"
-        }
-
-    except Exception as error:
-        print(f"File error: {repo['name']} -> {error}")
-        return {}
-
-
-def get_file(repo, filename):
-    url = (
-        f"{API}/repos/{USERNAME}/{repo['name']}"
-        f"/contents/{urllib.parse.quote(filename)}"
-    )
-
-    try:
-        data = github_get(url)
-
-        if data.get("encoding") != "base64":
-            return ""
-
-        return base64.b64decode(
-            data["content"]
-        ).decode(
-            "utf-8",
-            errors="ignore"
-        )
-
-    except Exception:
-        return ""
-
-
-# =========================================================
-# TECHNOLOGY DETECTION
-# =========================================================
-
-def detect_from_package_json(content):
-    technologies = set()
-
-    if not content:
-        return technologies
-
-    try:
-        data = json.loads(content)
-    except Exception:
-        return technologies
-
-    dependencies = {}
-
-    dependencies.update(data.get("dependencies", {}))
-    dependencies.update(data.get("devDependencies", {}))
-    dependencies.update(data.get("peerDependencies", {}))
-
-    names = set(dependencies.keys())
-
-    checks = {
-        "next": "Next.js",
-        "react": "React",
-        "react-dom": "React",
-        "vue": "Vue",
-        "nuxt": "Nuxt",
-        "svelte": "Svelte",
-        "@sveltejs/kit": "SvelteKit",
-        "express": "Express",
-        "fastify": "Fastify",
-        "@nestjs/core": "NestJS",
-        "astro": "Astro",
-        "vite": "Vite",
-        "tailwindcss": "Tailwind CSS",
-        "electron": "Electron",
-        "three": "Three.js",
-        "framer-motion": "Framer Motion",
-        "axios": "Axios",
-        "eslint": "ESLint",
-    }
-
-    for dependency, technology in checks.items():
-        if dependency in names:
-            technologies.add(technology)
-
-    if "typescript" in names:
-        technologies.add("TypeScript")
-
-    return technologies
-
-
-def detect_from_composer_json(content):
-    technologies = set()
-
-    if not content:
-        return technologies
-
-    try:
-        data = json.loads(content)
-    except Exception:
-        return technologies
-
-    dependencies = {}
-
-    dependencies.update(data.get("require", {}))
-    dependencies.update(data.get("require-dev", {}))
-
-    names = set(dependencies.keys())
-
-    checks = {
-        "laravel/framework": "Laravel",
-        "laravel/sanctum": "Laravel Sanctum",
-        "laravel/breeze": "Laravel Breeze",
-        "laravel/jetstream": "Laravel Jetstream",
-        "livewire/livewire": "Livewire",
-        "inertiajs/inertia-laravel": "Inertia.js",
-        "symfony/framework-bundle": "Symfony",
-        "symfony/console": "Symfony",
-        "filament/filament": "Filament",
-    }
-
-    for dependency, technology in checks.items():
-        if dependency in names:
-            technologies.add(technology)
-
-    return technologies
-
-
-def detect_from_files(files):
-    technologies = set()
-
-    names = set(files.keys())
-
-    if "dockerfile" in names:
-        technologies.add("Docker")
-
-    if "docker-compose.yml" in names:
-        technologies.add("Docker")
-
-    if "compose.yml" in names:
-        technologies.add("Docker")
-
-    if "requirements.txt" in names:
-        technologies.add("Python")
-
-    if "pyproject.toml" in names:
-        technologies.add("Python")
-
-    if "manage.py" in names:
-        technologies.add("Django")
-
-    if "go.mod" in names:
-        technologies.add("Go")
-
-    if "cargo.toml" in names:
-        technologies.add("Rust")
-
-    if "gemfile" in names:
-        technologies.add("Ruby")
-
-    if "pom.xml" in names:
-        technologies.add("Java")
-
-    if "build.gradle" in names:
-        technologies.add("Java")
-
-    return technologies
-
-
-# =========================================================
-# TECHNOLOGY COLORS + SIMPLE ICONS
-# =========================================================
-
+# Technology:
+# "Simple Icons slug", "brand color"
 TECHNOLOGY_DATA = {
-
     # Languages
     "PHP": ("php", "#777BB4"),
     "JavaScript": ("javascript", "#F7DF1E"),
@@ -264,8 +33,9 @@ TECHNOLOGY_DATA = {
     "Rust": ("rust", "#DEA584"),
     "Ruby": ("ruby", "#CC342D"),
     "Java": ("openjdk", "#ED8B00"),
+    "Blade": ("laravel", "#FF2D20"),
 
-    # Backend
+    # Backend / Frameworks
     "Laravel": ("laravel", "#FF2D20"),
     "Laravel Sanctum": ("laravel", "#FF2D20"),
     "Laravel Breeze": ("laravel", "#FF2D20"),
@@ -291,16 +61,13 @@ TECHNOLOGY_DATA = {
     "Fastify": ("fastify", "#FFFFFF"),
     "NestJS": ("nestjs", "#E0234E"),
 
-    # Frontend tools
+    # Tools
     "Vite": ("vite", "#646CFF"),
     "Tailwind CSS": ("tailwindcss", "#06B6D4"),
-    "TypeScript": ("typescript", "#3178C6"),
     "ESLint": ("eslint", "#4B32C3"),
     "Axios": ("axios", "#5A29E4"),
     "Framer Motion": ("framer", "#FFFFFF"),
     "Three.js": ("threedotjs", "#FFFFFF"),
-
-    # Desktop / DevOps
     "Electron": ("electron", "#47848F"),
     "Docker": ("docker", "#2496ED"),
     "Git": ("git", "#F05032"),
@@ -308,97 +75,571 @@ TECHNOLOGY_DATA = {
 }
 
 
-# =========================================================
-# SVG HELPERS
-# =========================================================
+# ============================================================
+# GITHUB API
+# ============================================================
 
-def escape_xml(text):
-    return (
-        str(text)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-        .replace("'", "&apos;")
+def github_request(url):
+    token = os.getenv("GITHUB_TOKEN")
+
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "rakayriii-tech-stack-generator",
+    }
+
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    request = urllib.request.Request(
+        url,
+        headers=headers
     )
 
+    try:
+        with urllib.request.urlopen(
+            request,
+            timeout=20
+        ) as response:
 
-def icon_svg(slug, color, x, y, size=28):
-    """
-    Download Simple Icons SVG and force the icon
-    to use the technology's own color.
-    """
+            return json.loads(
+                response.read().decode("utf-8")
+            )
+
+    except Exception as error:
+
+        print(f"GitHub API error: {url}")
+        print(error)
+
+        return None
+
+
+# ============================================================
+# REPOSITORIES
+# ============================================================
+
+def get_repositories():
+
+    repositories = []
+
+    page = 1
+
+    while True:
+
+        url = (
+            f"{API_BASE}/users/"
+            f"{USERNAME}/repos"
+            f"?per_page=100"
+            f"&page={page}"
+            f"&type=owner"
+        )
+
+        data = github_request(url)
+
+        if not data:
+            break
+
+        if not isinstance(data, list):
+            break
+
+        for repo in data:
+
+            # Ignore forked repositories
+            if repo.get("fork"):
+                continue
+
+            # Ignore archived repositories
+            if repo.get("archived"):
+                continue
+
+            # Ignore profile repository
+            if repo.get("name") == USERNAME:
+                continue
+
+            repositories.append(repo)
+
+        if len(data) < 100:
+            break
+
+        page += 1
+
+    print(
+        f"Found {len(repositories)} repositories."
+    )
+
+    return repositories
+
+
+# ============================================================
+# REPOSITORY CONTENT
+# ============================================================
+
+def get_root_files(repo):
+
+    repo_name = repo["name"]
 
     url = (
-        "https://cdn.jsdelivr.net/npm/simple-icons@latest/"
+        f"{API_BASE}/repos/"
+        f"{USERNAME}/{repo_name}/contents/"
+    )
+
+    data = github_request(url)
+
+    if not isinstance(data, list):
+        return []
+
+    return [
+        item.get("name", "")
+        for item in data
+    ]
+
+
+def get_file(repo, filename):
+
+    repo_name = repo["name"]
+
+    url = (
+        f"{API_BASE}/repos/"
+        f"{USERNAME}/{repo_name}/contents/"
+        f"{filename}"
+    )
+
+    data = github_request(url)
+
+    if not data:
+        return None
+
+    content = data.get("content")
+
+    if not content:
+        return None
+
+    try:
+
+        decoded = base64.b64decode(
+            content.replace("\n", "")
+        )
+
+        return decoded.decode(
+            "utf-8",
+            errors="ignore"
+        )
+
+    except Exception:
+
+        return None
+
+
+# ============================================================
+# PACKAGE.JSON DETECTION
+# ============================================================
+
+def detect_from_package_json(
+    package_content,
+    detected
+):
+
+    if not package_content:
+        return
+
+    try:
+
+        package = json.loads(
+            package_content
+        )
+
+    except Exception:
+
+        return
+
+    dependencies = {}
+
+    dependencies.update(
+        package.get("dependencies", {})
+    )
+
+    dependencies.update(
+        package.get("devDependencies", {})
+    )
+
+    dependency_names = set(
+        dependencies.keys()
+    )
+
+    # --------------------------------------------------------
+    # Frameworks
+    # --------------------------------------------------------
+
+    if "next" in dependency_names:
+        detected.add("Next.js")
+
+    if "react" in dependency_names:
+        detected.add("React")
+
+    if "vue" in dependency_names:
+        detected.add("Vue")
+
+    if "nuxt" in dependency_names:
+        detected.add("Nuxt")
+
+    if "svelte" in dependency_names:
+        detected.add("Svelte")
+
+    if "@sveltejs/kit" in dependency_names:
+        detected.add("SvelteKit")
+
+    if "astro" in dependency_names:
+        detected.add("Astro")
+
+    if "express" in dependency_names:
+        detected.add("Express")
+
+    if "fastify" in dependency_names:
+        detected.add("Fastify")
+
+    if "@nestjs/core" in dependency_names:
+        detected.add("NestJS")
+
+    # --------------------------------------------------------
+    # Tools
+    # --------------------------------------------------------
+
+    if "vite" in dependency_names:
+        detected.add("Vite")
+
+    if "tailwindcss" in dependency_names:
+        detected.add("Tailwind CSS")
+
+    if "eslint" in dependency_names:
+        detected.add("ESLint")
+
+    if "axios" in dependency_names:
+        detected.add("Axios")
+
+    if "framer-motion" in dependency_names:
+        detected.add("Framer Motion")
+
+    if "three" in dependency_names:
+        detected.add("Three.js")
+
+    if "electron" in dependency_names:
+        detected.add("Electron")
+
+    # --------------------------------------------------------
+    # TypeScript
+    # --------------------------------------------------------
+
+    if (
+        "typescript" in dependency_names
+        or "tsx" in dependency_names
+    ):
+        detected.add("TypeScript")
+
+
+# ============================================================
+# COMPOSER.JSON DETECTION
+# ============================================================
+
+def detect_from_composer_json(
+    composer_content,
+    detected
+):
+
+    if not composer_content:
+        return
+
+    try:
+
+        composer = json.loads(
+            composer_content
+        )
+
+    except Exception:
+
+        return
+
+    dependencies = {}
+
+    dependencies.update(
+        composer.get("require", {})
+    )
+
+    dependencies.update(
+        composer.get("require-dev", {})
+    )
+
+    dependency_names = set(
+        dependencies.keys()
+    )
+
+    # --------------------------------------------------------
+    # Laravel
+    # --------------------------------------------------------
+
+    if "laravel/framework" in dependency_names:
+        detected.add("Laravel")
+
+    if "laravel/sanctum" in dependency_names:
+        detected.add("Laravel Sanctum")
+
+    if "laravel/breeze" in dependency_names:
+        detected.add("Laravel Breeze")
+
+    if "laravel/jetstream" in dependency_names:
+        detected.add("Laravel Jetstream")
+
+    # --------------------------------------------------------
+    # Laravel ecosystem
+    # --------------------------------------------------------
+
+    if "livewire/livewire" in dependency_names:
+        detected.add("Livewire")
+
+    if "inertiajs/inertia-laravel" in dependency_names:
+        detected.add("Inertia.js")
+
+    if "symfony/framework-bundle" in dependency_names:
+        detected.add("Symfony")
+
+    if "filament/filament" in dependency_names:
+        detected.add("Filament")
+
+
+# ============================================================
+# FILE DETECTION
+# ============================================================
+
+def detect_from_files(
+    files,
+    detected
+):
+
+    normalized_files = {
+        file.lower()
+        for file in files
+    }
+
+    # Docker
+    if (
+        "dockerfile" in normalized_files
+        or "docker-compose.yml" in normalized_files
+        or "docker-compose.yaml" in normalized_files
+        or "compose.yml" in normalized_files
+        or "compose.yaml" in normalized_files
+    ):
+        detected.add("Docker")
+
+    # Python
+    if (
+        "requirements.txt" in normalized_files
+        or "pyproject.toml" in normalized_files
+        or "setup.py" in normalized_files
+        or "manage.py" in normalized_files
+    ):
+        detected.add("Python")
+
+    # Django
+    if "manage.py" in normalized_files:
+        detected.add("Django")
+
+    # Go
+    if "go.mod" in normalized_files:
+        detected.add("Go")
+
+    # Rust
+    if "cargo.toml" in normalized_files:
+        detected.add("Rust")
+
+    # Ruby
+    if (
+        "gemfile" in normalized_files
+        or "rakefile" in normalized_files
+    ):
+        detected.add("Ruby")
+
+    # Java
+    if (
+        "pom.xml" in normalized_files
+        or "build.gradle" in normalized_files
+        or "build.gradle.kts" in normalized_files
+    ):
+        detected.add("Java")
+
+    # Blade
+    if any(
+        file.endswith(".blade.php")
+        for file in normalized_files
+    ):
+        detected.add("Blade")
+
+    # HTML
+    if any(
+        file.endswith(".html")
+        for file in normalized_files
+    ):
+        detected.add("HTML")
+
+    # CSS
+    if any(
+        file.endswith(".css")
+        for file in normalized_files
+    ):
+        detected.add("CSS")
+
+    # JavaScript
+    if any(
+        file.endswith(".js")
+        or file.endswith(".jsx")
+        for file in normalized_files
+    ):
+        detected.add("JavaScript")
+
+    # TypeScript
+    if any(
+        file.endswith(".ts")
+        or file.endswith(".tsx")
+        for file in normalized_files
+    ):
+        detected.add("TypeScript")
+
+
+# ============================================================
+# LANGUAGE STATISTICS
+# ============================================================
+
+def get_languages(repo):
+
+    repo_name = repo["name"]
+
+    url = (
+        f"{API_BASE}/repos/"
+        f"{USERNAME}/{repo_name}/languages"
+    )
+
+    data = github_request(url)
+
+    if not isinstance(data, dict):
+        return {}
+
+    return data
+
+
+# ============================================================
+# ICON GENERATOR
+# ============================================================
+
+def icon_svg(
+    slug,
+    color,
+    x,
+    y,
+    size=28
+):
+
+    url = (
+        "https://cdn.jsdelivr.net/npm/"
+        "simple-icons@latest/"
         f"icons/{slug}.svg"
     )
 
     try:
+
         request = urllib.request.Request(
             url,
             headers={
-                "User-Agent": "rakayriii-tech-stack-generator"
+                "User-Agent":
+                    "Mozilla/5.0"
             }
         )
 
         with urllib.request.urlopen(
             request,
-            timeout=10
+            timeout=15
         ) as response:
-            svg = response.read().decode("utf-8")
 
-        start = svg.find("<path")
-        end = svg.find("</svg>")
+            svg = response.read().decode(
+                "utf-8"
+            )
 
-        if start == -1 or end == -1:
+        # Ambil semua <path>
+        paths = re.findall(
+            r"<path\b[^>]*>",
+            svg,
+            flags=re.IGNORECASE
+        )
+
+        if not paths:
             return ""
 
-        path = svg[start:end]
+        colored_paths = []
 
-        # Remove existing fill attributes
-        path = re.sub(
-            r'fill="[^"]*"',
-            "",
-            path
-        )
+        for path in paths:
 
-        # Remove stroke attributes
-        path = re.sub(
-            r'stroke="[^"]*"',
-            "",
-            path
-        )
+            # Hapus fill lama
+            path = re.sub(
+                r'\sfill\s*=\s*["\'][^"\']*["\']',
+                "",
+                path,
+                flags=re.IGNORECASE
+            )
 
-        # Force technology color
-        path = path.replace(
-            "<path",
-            f'<path fill="{color}"',
-            1
-        )
+            # Hapus stroke lama
+            path = re.sub(
+                r'\sstroke\s*=\s*["\'][^"\']*["\']',
+                "",
+                path,
+                flags=re.IGNORECASE
+            )
+
+            # Hapus inline style
+            path = re.sub(
+                r'\sstyle\s*=\s*["\'][^"\']*["\']',
+                "",
+                path,
+                flags=re.IGNORECASE
+            )
+
+            # Paksa warna
+            path = path.replace(
+                "<path",
+                f'<path fill="{color}"'
+            )
+
+            colored_paths.append(path)
 
         scale = size / 24
 
-        return f"""
-        <g transform="translate({x},{y}) scale({scale})">
-            {path}
-        </g>
-        """
+        return (
+            f'<g transform="translate({x},{y}) '
+            f'scale({scale})">'
+            + "".join(colored_paths)
+            + "</g>"
+        )
 
     except Exception as error:
+
         print(
             f"Icon error: {slug} -> {error}"
         )
+
         return ""
 
 
-def create_svg(title, items, output_file):
+# ============================================================
+# SVG GENERATOR
+# ============================================================
+
+def create_svg(
+    title,
+    items,
+    output_file
+):
 
     width = 900
-
     row_height = 64
 
-    top = 85
+    # Tidak ada title di dalam SVG.
+    # Judul sudah ada di README.
+    top = 35
 
     height = (
         top
@@ -407,7 +648,10 @@ def create_svg(title, items, output_file):
     )
 
     svg = [
-        f'<svg width="{width}" height="{height}" '
+
+        f'<svg '
+        f'width="{width}" '
+        f'height="{height}" '
         f'viewBox="0 0 {width} {height}" '
         f'xmlns="http://www.w3.org/2000/svg">',
 
@@ -416,22 +660,11 @@ def create_svg(title, items, output_file):
         'height="100%" '
         'rx="18" '
         'fill="#0d1117"/>',
-
-        f'<text '
-        f'x="35" '
-        f'y="45" '
-        f'fill="#f0f6fc" '
-        f'font-family="Arial, sans-serif" '
-        f'font-size="22" '
-        f'font-weight="700">'
-        f'{escape_xml(title)}'
-        f'</text>',
     ]
 
     for index, item in enumerate(items):
 
         name = item["name"]
-
         percent = item["percent"]
 
         y = (
@@ -449,18 +682,24 @@ def create_svg(title, items, output_file):
             )
         )
 
-        # Icon
-        svg.append(
-            icon_svg(
-                slug,
-                color,
-                35,
-                y,
-                28
-            )
+        # ----------------------------------------------------
+        # ICON
+        # ----------------------------------------------------
+
+        icon = icon_svg(
+            slug,
+            color,
+            35,
+            y,
+            28
         )
 
-        # Technology name
+        svg.append(icon)
+
+        # ----------------------------------------------------
+        # NAME
+        # ----------------------------------------------------
+
         svg.append(
             f'<text '
             f'x="78" '
@@ -469,11 +708,14 @@ def create_svg(title, items, output_file):
             f'font-family="Arial, sans-serif" '
             f'font-size="16" '
             f'font-weight="600">'
-            f'{escape_xml(name)}'
+            f'{escape(name)}'
             f'</text>'
         )
 
-        # Background bar
+        # ----------------------------------------------------
+        # BACKGROUND BAR
+        # ----------------------------------------------------
+
         bar_x = 280
         bar_width = 430
         bar_height = 12
@@ -488,7 +730,10 @@ def create_svg(title, items, output_file):
             f'fill="#21262d"/>'
         )
 
-        # Progress
+        # ----------------------------------------------------
+        # PROGRESS BAR
+        # ----------------------------------------------------
+
         filled_width = max(
             3,
             bar_width * (
@@ -506,7 +751,10 @@ def create_svg(title, items, output_file):
             f'fill="{color}"/>'
         )
 
-        # Percentage
+        # ----------------------------------------------------
+        # PERCENTAGE
+        # ----------------------------------------------------
+
         svg.append(
             f'<text '
             f'x="735" '
@@ -527,28 +775,30 @@ def create_svg(title, items, output_file):
     )
 
 
-# =========================================================
+# ============================================================
 # README UPDATE
-# =========================================================
+# ============================================================
 
-def update_readme(
-    language_items,
-    framework_items
-):
+def update_readme():
 
     readme_path = Path("README.md")
 
     if not readme_path.exists():
+
+        print(
+            "README.md not found."
+        )
+
         return
 
-    content = readme_path.read_text(
+    readme = readme_path.read_text(
         encoding="utf-8"
     )
 
     language_block = (
         "<!-- LANGUAGES_START -->\n"
         '<div align="center">\n\n'
-        '<img src="./generated/languages.svg" '
+        '<img src="./generated/languages.svg?v=2" '
         'alt="Languages" />\n\n'
         '</div>\n'
         "<!-- LANGUAGES_END -->"
@@ -557,274 +807,315 @@ def update_readme(
     framework_block = (
         "<!-- FRAMEWORKS_START -->\n"
         '<div align="center">\n\n'
-        '<img src="./generated/frameworks.svg" '
+        '<img src="./generated/frameworks.svg?v=2" '
         'alt="Frameworks & Technologies" />\n\n'
         '</div>\n'
         "<!-- FRAMEWORKS_END -->"
     )
 
-    if (
-        "<!-- LANGUAGES_START -->" in content
-        and
-        "<!-- LANGUAGES_END -->" in content
-    ):
+    # --------------------------------------------------------
+    # Languages
+    # --------------------------------------------------------
 
-        start = content.index(
-            "<!-- LANGUAGES_START -->"
+    language_pattern = re.compile(
+        r"<!-- LANGUAGES_START -->.*?"
+        r"<!-- LANGUAGES_END -->",
+        re.DOTALL
+    )
+
+    if language_pattern.search(readme):
+
+        readme = language_pattern.sub(
+            language_block,
+            readme
         )
 
-        end = (
-            content.index(
-                "<!-- LANGUAGES_END -->"
-            )
-            + len("<!-- LANGUAGES_END -->")
-        )
+    else:
 
-        content = (
-            content[:start]
+        readme += (
+            "\n\n"
             + language_block
-            + content[end:]
+            + "\n"
         )
 
-    if (
-        "<!-- FRAMEWORKS_START -->" in content
-        and
-        "<!-- FRAMEWORKS_END -->" in content
-    ):
+    # --------------------------------------------------------
+    # Frameworks
+    # --------------------------------------------------------
 
-        start = content.index(
-            "<!-- FRAMEWORKS_START -->"
+    framework_pattern = re.compile(
+        r"<!-- FRAMEWORKS_START -->.*?"
+        r"<!-- FRAMEWORKS_END -->",
+        re.DOTALL
+    )
+
+    if framework_pattern.search(readme):
+
+        readme = framework_pattern.sub(
+            framework_block,
+            readme
         )
 
-        end = (
-            content.index(
-                "<!-- FRAMEWORKS_END -->"
-            )
-            + len("<!-- FRAMEWORKS_END -->")
-        )
+    else:
 
-        content = (
-            content[:start]
+        readme += (
+            "\n\n"
             + framework_block
-            + content[end:]
+            + "\n"
         )
 
     readme_path.write_text(
-        content,
+        readme,
         encoding="utf-8"
     )
 
+    print(
+        "README.md updated."
+    )
 
-# =========================================================
+
+# ============================================================
 # MAIN
-# =========================================================
+# ============================================================
 
 def main():
 
-    print("=" * 60)
-
     print(
-        "RAKAYRIII TECHNOLOGY STACK GENERATOR"
+        "========================================"
     )
 
-    print("=" * 60)
+    print(
+        " GitHub Technology Stack Generator"
+    )
+
+    print(
+        "========================================"
+    )
 
     repositories = get_repositories()
 
-    print(
-        f"\nRepositories found: "
-        f"{len(repositories)}"
-    )
+    if not repositories:
 
-    language_bytes = Counter()
+        print(
+            "No repositories found."
+        )
 
-    framework_usage = Counter()
+        return
+
+    # --------------------------------------------------------
+    # Statistics
+    # --------------------------------------------------------
+
+    language_bytes = {}
+
+    framework_usage = {}
 
     total_repositories = len(
         repositories
     )
 
-    for repo in repositories:
+    # --------------------------------------------------------
+    # Scan repositories
+    # --------------------------------------------------------
 
-        name = repo["name"]
+    for index, repo in enumerate(
+        repositories,
+        start=1
+    ):
+
+        repo_name = repo["name"]
 
         print(
-            f"\nScanning: {name}"
+            f"[{index}/{total_repositories}] "
+            f"Scanning {repo_name}..."
         )
 
+        detected = set()
+
+        # ----------------------------------------------------
         # Languages
-        languages = get_languages(
-            repo
+        # ----------------------------------------------------
+
+        languages = get_languages(repo)
+
+        for language, bytes_count in languages.items():
+
+            language_bytes[language] = (
+                language_bytes.get(
+                    language,
+                    0
+                )
+                + bytes_count
+            )
+
+        # ----------------------------------------------------
+        # Root files
+        # ----------------------------------------------------
+
+        files = get_root_files(repo)
+
+        detect_from_files(
+            files,
+            detected
         )
 
-        for language, amount in languages.items():
-
-            language_bytes[
-                language
-            ] += amount
-
-        # Files
-        files = get_root_files(
-            repo
-        )
-
-        detected = detect_from_files(
-            files
-        )
-
+        # ----------------------------------------------------
         # package.json
+        # ----------------------------------------------------
+
         if "package.json" in files:
 
-            package_json = get_file(
+            package_content = get_file(
                 repo,
                 "package.json"
             )
 
-            detected.update(
-                detect_from_package_json(
-                    package_json
-                )
+            detect_from_package_json(
+                package_content,
+                detected
             )
 
+        # ----------------------------------------------------
         # composer.json
+        # ----------------------------------------------------
+
         if "composer.json" in files:
 
-            composer_json = get_file(
+            composer_content = get_file(
                 repo,
                 "composer.json"
             )
 
-            detected.update(
-                detect_from_composer_json(
-                    composer_json
-                )
+            detect_from_composer_json(
+                composer_content,
+                detected
             )
 
-        print(
-            "Detected:",
-            ", ".join(
-                sorted(detected)
-            )
-            if detected
-            else "None"
-        )
+        # ----------------------------------------------------
+        # Count framework usage
+        # ----------------------------------------------------
 
         for technology in detected:
 
-            framework_usage[
-                technology
-            ] += 1
+            framework_usage[technology] = (
+                framework_usage.get(
+                    technology,
+                    0
+                )
+                + 1
+            )
 
-    # =====================================================
-    # LANGUAGE STATISTICS
-    # =====================================================
+    # ========================================================
+    # LANGUAGE PERCENTAGES
+    # ========================================================
 
-    total_bytes = sum(
+    total_language_bytes = sum(
         language_bytes.values()
     )
 
     language_items = []
 
-    for name, amount in (
-        language_bytes.most_common()
-    ):
+    if total_language_bytes > 0:
 
-        percent = (
-            amount
-            / total_bytes
-            * 100
-            if total_bytes
-            else 0
-        )
+        for language, bytes_count in sorted(
+            language_bytes.items(),
+            key=lambda item: item[1],
+            reverse=True
+        ):
 
-        language_items.append({
-            "name": name,
-            "percent": percent,
-        })
+            percent = (
+                bytes_count
+                / total_language_bytes
+                * 100
+            )
 
-    # =====================================================
-    # FRAMEWORK STATISTICS
-    # =====================================================
+            language_items.append(
+                {
+                    "name": language,
+                    "percent": percent
+                }
+            )
+
+    # Limit to top 10
+    language_items = language_items[:10]
+
+    # ========================================================
+    # FRAMEWORK PERCENTAGES
+    # ========================================================
 
     framework_items = []
 
-    for name, count in (
-        framework_usage.most_common()
+    for technology, count in sorted(
+        framework_usage.items(),
+        key=lambda item: item[1],
+        reverse=True
     ):
 
         percent = (
             count
             / total_repositories
             * 100
-            if total_repositories
-            else 0
         )
 
-        framework_items.append({
-            "name": name,
-            "percent": percent,
-        })
+        framework_items.append(
+            {
+                "name": technology,
+                "percent": percent
+            }
+        )
 
-    # =====================================================
-    # GENERATE FILES
-    # =====================================================
+    # Limit to top 10
+    framework_items = framework_items[:10]
 
-    generated = Path(
-        "generated"
-    )
-
-    generated.mkdir(
-        exist_ok=True
-    )
+    # ========================================================
+    # CREATE SVG
+    # ========================================================
 
     create_svg(
         "Languages",
         language_items,
-        generated / "languages.svg"
+        OUTPUT_DIR / "languages.svg"
     )
 
     create_svg(
         "Frameworks & Technologies",
         framework_items,
-        generated / "frameworks.svg"
+        OUTPUT_DIR / "frameworks.svg"
     )
 
-    update_readme(
-        language_items,
-        framework_items
+    # ========================================================
+    # UPDATE README
+    # ========================================================
+
+    update_readme()
+
+    # ========================================================
+    # OUTPUT
+    # ========================================================
+
+    print()
+    print(
+        "========================================"
     )
 
-    # =====================================================
-    # RESULT
-    # =====================================================
+    print(
+        " Technology statistics generated!"
+    )
 
-    print("\n")
-    print("=" * 60)
-    print("TECHNOLOGY STATISTICS")
-    print("=" * 60)
+    print(
+        "========================================"
+    )
 
-    print("\nLANGUAGES:")
+    print(
+        f"Languages: {len(language_items)}"
+    )
 
-    for item in language_items:
+    print(
+        f"Frameworks: {len(framework_items)}"
+    )
 
-        print(
-            f"  {item['name']}: "
-            f"{item['percent']:.1f}%"
-        )
-
-    print("\nFRAMEWORKS & TECHNOLOGIES:")
-
-    for item in framework_items:
-
-        print(
-            f"  {item['name']}: "
-            f"{item['percent']:.1f}%"
-        )
-
-    print("\n")
-    print("=" * 60)
-    print("DONE")
-    print("=" * 60)
+    print(
+        f"Output: {OUTPUT_DIR}"
+    )
 
 
 if __name__ == "__main__":
