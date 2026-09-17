@@ -1,7 +1,9 @@
 import json
 import os
+import re
 import urllib.request
 import urllib.parse
+import base64
 from collections import Counter
 from pathlib import Path
 
@@ -19,7 +21,7 @@ HEADERS = {
 
 
 # =========================================================
-# GitHub API
+# GITHUB API
 # =========================================================
 
 def github_get(url):
@@ -102,9 +104,9 @@ def get_file(repo, filename):
         if data.get("encoding") != "base64":
             return ""
 
-        import base64
-
-        return base64.b64decode(data["content"]).decode(
+        return base64.b64decode(
+            data["content"]
+        ).decode(
             "utf-8",
             errors="ignore"
         )
@@ -114,7 +116,7 @@ def get_file(repo, filename):
 
 
 # =========================================================
-# Dependency detection
+# TECHNOLOGY DETECTION
 # =========================================================
 
 def detect_from_package_json(content):
@@ -134,7 +136,7 @@ def detect_from_package_json(content):
     dependencies.update(data.get("devDependencies", {}))
     dependencies.update(data.get("peerDependencies", {}))
 
-    dependency_names = set(dependencies.keys())
+    names = set(dependencies.keys())
 
     checks = {
         "next": "Next.js",
@@ -146,7 +148,6 @@ def detect_from_package_json(content):
         "@sveltejs/kit": "SvelteKit",
         "express": "Express",
         "fastify": "Fastify",
-        "nestjs": "NestJS",
         "@nestjs/core": "NestJS",
         "astro": "Astro",
         "vite": "Vite",
@@ -155,17 +156,15 @@ def detect_from_package_json(content):
         "three": "Three.js",
         "framer-motion": "Framer Motion",
         "axios": "Axios",
+        "eslint": "ESLint",
     }
 
     for dependency, technology in checks.items():
-        if dependency in dependency_names:
+        if dependency in names:
             technologies.add(technology)
 
-    if "typescript" in dependency_names:
+    if "typescript" in names:
         technologies.add("TypeScript")
-
-    if "eslint" in dependency_names:
-        technologies.add("ESLint")
 
     return technologies
 
@@ -186,7 +185,7 @@ def detect_from_composer_json(content):
     dependencies.update(data.get("require", {}))
     dependencies.update(data.get("require-dev", {}))
 
-    dependency_names = set(dependencies.keys())
+    names = set(dependencies.keys())
 
     checks = {
         "laravel/framework": "Laravel",
@@ -201,7 +200,7 @@ def detect_from_composer_json(content):
     }
 
     for dependency, technology in checks.items():
-        if dependency in dependency_names:
+        if dependency in names:
             technologies.add(technology)
 
     return technologies
@@ -212,7 +211,6 @@ def detect_from_files(files):
 
     names = set(files.keys())
 
-    # Docker
     if "dockerfile" in names:
         technologies.add("Docker")
 
@@ -222,7 +220,6 @@ def detect_from_files(files):
     if "compose.yml" in names:
         technologies.add("Docker")
 
-    # Python
     if "requirements.txt" in names:
         technologies.add("Python")
 
@@ -232,19 +229,15 @@ def detect_from_files(files):
     if "manage.py" in names:
         technologies.add("Django")
 
-    # Go
     if "go.mod" in names:
         technologies.add("Go")
 
-    # Rust
     if "cargo.toml" in names:
         technologies.add("Rust")
 
-    # Ruby
     if "gemfile" in names:
         technologies.add("Ruby")
 
-    # Java
     if "pom.xml" in names:
         technologies.add("Java")
 
@@ -255,57 +248,68 @@ def detect_from_files(files):
 
 
 # =========================================================
-# Technology metadata
+# TECHNOLOGY COLORS + SIMPLE ICONS
 # =========================================================
 
 TECHNOLOGY_DATA = {
+
+    # Languages
     "PHP": ("php", "#777BB4"),
+    "JavaScript": ("javascript", "#F7DF1E"),
+    "TypeScript": ("typescript", "#3178C6"),
+    "HTML": ("html5", "#E34F26"),
+    "CSS": ("css3", "#1572B6"),
+    "Python": ("python", "#3776AB"),
+    "Go": ("go", "#00ADD8"),
+    "Rust": ("rust", "#DEA584"),
+    "Ruby": ("ruby", "#CC342D"),
+    "Java": ("openjdk", "#ED8B00"),
+
+    # Backend
     "Laravel": ("laravel", "#FF2D20"),
     "Laravel Sanctum": ("laravel", "#FF2D20"),
     "Laravel Breeze": ("laravel", "#FF2D20"),
     "Laravel Jetstream": ("laravel", "#FF2D20"),
     "Livewire": ("livewire", "#4E56A6"),
     "Inertia.js": ("inertia", "#9553E9"),
-    "Symfony": ("symfony", "#000000"),
+    "Symfony": ("symfony", "#FFFFFF"),
     "Filament": ("filament", "#F59E0B"),
+    "Django": ("django", "#44B78B"),
 
-    "JavaScript": ("javascript", "#F7DF1E"),
-    "TypeScript": ("typescript", "#3178C6"),
+    # Frontend
     "React": ("react", "#61DAFB"),
-    "Next.js": ("nextdotjs", "#000000"),
+    "Next.js": ("nextdotjs", "#FFFFFF"),
     "Vue": ("vuedotjs", "#4FC08D"),
     "Nuxt": ("nuxt", "#00DC82"),
     "Svelte": ("svelte", "#FF3E00"),
     "SvelteKit": ("svelte", "#FF3E00"),
-    "Express": ("express", "#000000"),
-    "Fastify": ("fastify", "#000000"),
-    "NestJS": ("nestjs", "#E0234E"),
     "Astro": ("astro", "#FF5D01"),
+
+    # Node ecosystem
+    "Node.js": ("nodedotjs", "#5FA04E"),
+    "Express": ("express", "#FFFFFF"),
+    "Fastify": ("fastify", "#FFFFFF"),
+    "NestJS": ("nestjs", "#E0234E"),
+
+    # Frontend tools
     "Vite": ("vite", "#646CFF"),
     "Tailwind CSS": ("tailwindcss", "#06B6D4"),
-    "Electron": ("electron", "#47848F"),
-    "Three.js": ("threedotjs", "#000000"),
-    "Framer Motion": ("framer", "#0055FF"),
-    "Axios": ("axios", "#5A29E4"),
+    "TypeScript": ("typescript", "#3178C6"),
     "ESLint": ("eslint", "#4B32C3"),
+    "Axios": ("axios", "#5A29E4"),
+    "Framer Motion": ("framer", "#FFFFFF"),
+    "Three.js": ("threedotjs", "#FFFFFF"),
 
-    "HTML": ("html5", "#E34F26"),
-    "CSS": ("css3", "#1572B6"),
-    "Python": ("python", "#3776AB"),
-    "Django": ("django", "#092E20"),
-    "Go": ("go", "#00ADD8"),
-    "Rust": ("rust", "#000000"),
-    "Ruby": ("ruby", "#CC342D"),
-    "Java": ("openjdk", "#437291"),
-
+    # Desktop / DevOps
+    "Electron": ("electron", "#47848F"),
     "Docker": ("docker", "#2496ED"),
     "Git": ("git", "#F05032"),
-    "GitHub": ("github", "#181717"),
+    "GitHub": ("github", "#FFFFFF"),
 }
 
 
 # =========================================================
-# SVG helpers
+# SVG HELPERS
 # =========================================================
 
 def escape_xml(text):
@@ -321,7 +325,8 @@ def escape_xml(text):
 
 def icon_svg(slug, color, x, y, size=28):
     """
-    Fetch Simple Icons SVG and embed its path directly.
+    Download Simple Icons SVG and force the icon
+    to use the technology's own color.
     """
 
     url = (
@@ -332,10 +337,15 @@ def icon_svg(slug, color, x, y, size=28):
     try:
         request = urllib.request.Request(
             url,
-            headers={"User-Agent": "rakayriii-tech-stack-generator"}
+            headers={
+                "User-Agent": "rakayriii-tech-stack-generator"
+            }
         )
 
-        with urllib.request.urlopen(request, timeout=10) as response:
+        with urllib.request.urlopen(
+            request,
+            timeout=10
+        ) as response:
             svg = response.read().decode("utf-8")
 
         start = svg.find("<path")
@@ -346,96 +356,167 @@ def icon_svg(slug, color, x, y, size=28):
 
         path = svg[start:end]
 
-        path = path.replace(
-            'fill="currentColor"',
-            f'fill="{color}"'
+        # Remove existing fill attributes
+        path = re.sub(
+            r'fill="[^"]*"',
+            "",
+            path
         )
 
-        path = path.replace(
-            'fill="none"',
-            f'fill="{color}"'
+        # Remove stroke attributes
+        path = re.sub(
+            r'stroke="[^"]*"',
+            "",
+            path
         )
+
+        # Force technology color
+        path = path.replace(
+            "<path",
+            f'<path fill="{color}"',
+            1
+        )
+
+        scale = size / 24
 
         return f"""
-        <g transform="translate({x},{y}) scale({size / 24})">
+        <g transform="translate({x},{y}) scale({scale})">
             {path}
         </g>
         """
 
     except Exception as error:
-        print(f"Icon error: {slug} -> {error}")
+        print(
+            f"Icon error: {slug} -> {error}"
+        )
         return ""
 
 
 def create_svg(title, items, output_file):
+
     width = 900
+
     row_height = 64
+
     top = 85
-    height = top + len(items) * row_height + 35
+
+    height = (
+        top
+        + len(items) * row_height
+        + 35
+    )
 
     svg = [
         f'<svg width="{width}" height="{height}" '
         f'viewBox="0 0 {width} {height}" '
         f'xmlns="http://www.w3.org/2000/svg">',
-        '<rect width="100%" height="100%" rx="18" fill="#0d1117"/>',
-        f'<text x="35" y="45" fill="#f0f6fc" '
-        f'font-family="Arial, sans-serif" font-size="22" '
-        f'font-weight="700">{escape_xml(title)}</text>',
+
+        '<rect '
+        'width="100%" '
+        'height="100%" '
+        'rx="18" '
+        'fill="#0d1117"/>',
+
+        f'<text '
+        f'x="35" '
+        f'y="45" '
+        f'fill="#f0f6fc" '
+        f'font-family="Arial, sans-serif" '
+        f'font-size="22" '
+        f'font-weight="700">'
+        f'{escape_xml(title)}'
+        f'</text>',
     ]
 
     for index, item in enumerate(items):
+
         name = item["name"]
+
         percent = item["percent"]
 
-        y = top + index * row_height
+        y = (
+            top
+            + index * row_height
+        )
 
         slug, color = TECHNOLOGY_DATA.get(
             name,
-            (name.lower().replace(" ", ""), "#8b949e")
+            (
+                name.lower()
+                .replace(" ", "")
+                .replace(".", ""),
+                "#58A6FF"
+            )
         )
 
+        # Icon
         svg.append(
             icon_svg(
                 slug,
                 color,
                 35,
                 y,
-                27
+                28
             )
         )
 
+        # Technology name
         svg.append(
-            f'<text x="78" y="{y + 22}" fill="#c9d1d9" '
-            f'font-family="Arial, sans-serif" font-size="16" '
-            f'font-weight="600">{escape_xml(name)}</text>'
+            f'<text '
+            f'x="78" '
+            f'y="{y + 22}" '
+            f'fill="#c9d1d9" '
+            f'font-family="Arial, sans-serif" '
+            f'font-size="16" '
+            f'font-weight="600">'
+            f'{escape_xml(name)}'
+            f'</text>'
         )
 
+        # Background bar
         bar_x = 280
         bar_width = 430
         bar_height = 12
 
         svg.append(
-            f'<rect x="{bar_x}" y="{y + 9}" '
-            f'width="{bar_width}" height="{bar_height}" '
-            f'rx="6" fill="#21262d"/>'
+            f'<rect '
+            f'x="{bar_x}" '
+            f'y="{y + 9}" '
+            f'width="{bar_width}" '
+            f'height="{bar_height}" '
+            f'rx="6" '
+            f'fill="#21262d"/>'
         )
 
+        # Progress
         filled_width = max(
             3,
-            bar_width * (percent / 100)
+            bar_width * (
+                percent / 100
+            )
         )
 
         svg.append(
-            f'<rect x="{bar_x}" y="{y + 9}" '
+            f'<rect '
+            f'x="{bar_x}" '
+            f'y="{y + 9}" '
             f'width="{filled_width:.1f}" '
-            f'height="{bar_height}" rx="6" '
+            f'height="{bar_height}" '
+            f'rx="6" '
             f'fill="{color}"/>'
         )
 
+        # Percentage
         svg.append(
-            f'<text x="735" y="{y + 22}" fill="#f0f6fc" '
-            f'font-family="Arial, sans-serif" font-size="15" '
-            f'font-weight="700">{percent:.1f}%</text>'
+            f'<text '
+            f'x="735" '
+            f'y="{y + 22}" '
+            f'fill="#f0f6fc" '
+            f'font-family="Arial, sans-serif" '
+            f'font-size="15" '
+            f'font-weight="700">'
+            f'{percent:.1f}%'
+            f'</text>'
         )
 
     svg.append("</svg>")
@@ -447,46 +528,56 @@ def create_svg(title, items, output_file):
 
 
 # =========================================================
-# README updater
+# README UPDATE
 # =========================================================
 
-def update_readme(language_items, framework_items):
+def update_readme(
+    language_items,
+    framework_items
+):
+
     readme_path = Path("README.md")
 
     if not readme_path.exists():
         return
 
-    content = readme_path.read_text(encoding="utf-8")
-
-    language_text = "\n".join(
-        f"- **{item['name']}** `{item['percent']:.1f}%`"
-        for item in language_items
-    )
-
-    framework_text = "\n".join(
-        f"- **{item['name']}** `{item['percent']:.1f}%`"
-        for item in framework_items
+    content = readme_path.read_text(
+        encoding="utf-8"
     )
 
     language_block = (
         "<!-- LANGUAGES_START -->\n"
-        f"{language_text}\n"
+        '<div align="center">\n\n'
+        '<img src="./generated/languages.svg" '
+        'alt="Languages" />\n\n'
+        '</div>\n'
         "<!-- LANGUAGES_END -->"
     )
 
     framework_block = (
         "<!-- FRAMEWORKS_START -->\n"
-        f"{framework_text}\n"
+        '<div align="center">\n\n'
+        '<img src="./generated/frameworks.svg" '
+        'alt="Frameworks & Technologies" />\n\n'
+        '</div>\n'
         "<!-- FRAMEWORKS_END -->"
     )
 
     if (
         "<!-- LANGUAGES_START -->" in content
-        and "<!-- LANGUAGES_END -->" in content
+        and
+        "<!-- LANGUAGES_END -->" in content
     ):
-        start = content.index("<!-- LANGUAGES_START -->")
-        end = content.index("<!-- LANGUAGES_END -->") + len(
-            "<!-- LANGUAGES_END -->"
+
+        start = content.index(
+            "<!-- LANGUAGES_START -->"
+        )
+
+        end = (
+            content.index(
+                "<!-- LANGUAGES_END -->"
+            )
+            + len("<!-- LANGUAGES_END -->")
         )
 
         content = (
@@ -497,11 +588,19 @@ def update_readme(language_items, framework_items):
 
     if (
         "<!-- FRAMEWORKS_START -->" in content
-        and "<!-- FRAMEWORKS_END -->" in content
+        and
+        "<!-- FRAMEWORKS_END -->" in content
     ):
-        start = content.index("<!-- FRAMEWORKS_START -->")
-        end = content.index("<!-- FRAMEWORKS_END -->") + len(
-            "<!-- FRAMEWORKS_END -->"
+
+        start = content.index(
+            "<!-- FRAMEWORKS_START -->"
+        )
+
+        end = (
+            content.index(
+                "<!-- FRAMEWORKS_END -->"
+            )
+            + len("<!-- FRAMEWORKS_END -->")
         )
 
         content = (
@@ -517,70 +616,123 @@ def update_readme(language_items, framework_items):
 
 
 # =========================================================
-# Main
+# MAIN
 # =========================================================
 
 def main():
+
     print("=" * 60)
-    print("RAKAYRIII TECHNOLOGY STACK GENERATOR")
+
+    print(
+        "RAKAYRIII TECHNOLOGY STACK GENERATOR"
+    )
+
     print("=" * 60)
 
     repositories = get_repositories()
 
-    print(f"\nRepositories found: {len(repositories)}")
+    print(
+        f"\nRepositories found: "
+        f"{len(repositories)}"
+    )
 
     language_bytes = Counter()
+
     framework_usage = Counter()
 
-    total_repositories = len(repositories)
+    total_repositories = len(
+        repositories
+    )
 
     for repo in repositories:
+
         name = repo["name"]
 
-        print(f"\nScanning: {name}")
+        print(
+            f"\nScanning: {name}"
+        )
 
-        languages = get_languages(repo)
+        # Languages
+        languages = get_languages(
+            repo
+        )
 
         for language, amount in languages.items():
-            language_bytes[language] += amount
 
-        files = get_root_files(repo)
+            language_bytes[
+                language
+            ] += amount
 
-        detected = detect_from_files(files)
+        # Files
+        files = get_root_files(
+            repo
+        )
 
+        detected = detect_from_files(
+            files
+        )
+
+        # package.json
         if "package.json" in files:
-            package_json = get_file(repo, "package.json")
-            detected.update(
-                detect_from_package_json(package_json)
+
+            package_json = get_file(
+                repo,
+                "package.json"
             )
 
-        if "composer.json" in files:
-            composer_json = get_file(repo, "composer.json")
             detected.update(
-                detect_from_composer_json(composer_json)
+                detect_from_package_json(
+                    package_json
+                )
+            )
+
+        # composer.json
+        if "composer.json" in files:
+
+            composer_json = get_file(
+                repo,
+                "composer.json"
+            )
+
+            detected.update(
+                detect_from_composer_json(
+                    composer_json
+                )
             )
 
         print(
             "Detected:",
-            ", ".join(sorted(detected))
+            ", ".join(
+                sorted(detected)
+            )
             if detected
             else "None"
         )
 
         for technology in detected:
-            framework_usage[technology] += 1
 
-    # -----------------------------------------------------
-    # Language percentages
-    # -----------------------------------------------------
+            framework_usage[
+                technology
+            ] += 1
 
-    total_bytes = sum(language_bytes.values())
+    # =====================================================
+    # LANGUAGE STATISTICS
+    # =====================================================
+
+    total_bytes = sum(
+        language_bytes.values()
+    )
 
     language_items = []
 
-    for name, amount in language_bytes.most_common():
+    for name, amount in (
+        language_bytes.most_common()
+    ):
+
         percent = (
-            (amount / total_bytes) * 100
+            amount
+            / total_bytes
+            * 100
             if total_bytes
             else 0
         )
@@ -590,15 +742,20 @@ def main():
             "percent": percent,
         })
 
-    # -----------------------------------------------------
-    # Framework percentages
-    # -----------------------------------------------------
+    # =====================================================
+    # FRAMEWORK STATISTICS
+    # =====================================================
 
     framework_items = []
 
-    for name, count in framework_usage.most_common():
+    for name, count in (
+        framework_usage.most_common()
+    ):
+
         percent = (
-            (count / total_repositories) * 100
+            count
+            / total_repositories
+            * 100
             if total_repositories
             else 0
         )
@@ -608,12 +765,17 @@ def main():
             "percent": percent,
         })
 
-    # -----------------------------------------------------
-    # Output
-    # -----------------------------------------------------
+    # =====================================================
+    # GENERATE FILES
+    # =====================================================
 
-    generated = Path("generated")
-    generated.mkdir(exist_ok=True)
+    generated = Path(
+        "generated"
+    )
+
+    generated.mkdir(
+        exist_ok=True
+    )
 
     create_svg(
         "Languages",
@@ -632,23 +794,37 @@ def main():
         framework_items
     )
 
-    print("\n" + "=" * 60)
-    print("DONE")
+    # =====================================================
+    # RESULT
+    # =====================================================
+
+    print("\n")
+    print("=" * 60)
+    print("TECHNOLOGY STATISTICS")
     print("=" * 60)
 
-    print("\nLanguages:")
+    print("\nLANGUAGES:")
+
     for item in language_items:
+
         print(
             f"  {item['name']}: "
             f"{item['percent']:.1f}%"
         )
 
-    print("\nFrameworks:")
+    print("\nFRAMEWORKS & TECHNOLOGIES:")
+
     for item in framework_items:
+
         print(
             f"  {item['name']}: "
             f"{item['percent']:.1f}%"
         )
+
+    print("\n")
+    print("=" * 60)
+    print("DONE")
+    print("=" * 60)
 
 
 if __name__ == "__main__":
