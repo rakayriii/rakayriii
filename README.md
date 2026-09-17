@@ -4,12 +4,14 @@
 
 ### Full-Stack Developer
 
-Building web applications, learning backend architecture,
-and occasionally fighting with Linux because apparently computers enjoy suffering.
+Building modern web applications and exploring backend architecture,
+deployment, and scalable software systems.
 
 <br>
 
-[![GitHub](https://img.shields.io/badge/GitHub-rakayriii-181717?style=for-the-badge&logo=github)](https://github.com/rakayriii)
+<a href="https://github.com/rakayriii">
+<img src="https://img.shields.io/badge/GitHub-rakayriii-181717?style=for-the-badge&logo=github" />
+</a>
 
 </div>
 
@@ -17,16 +19,17 @@ and occasionally fighting with Linux because apparently computers enjoy sufferin
 
 ## About Me
 
-I'm a developer focused on building modern web applications and learning
-how real-world software systems are designed, deployed, and maintained.
+I'm a developer focused on building real-world web applications
+and continuously improving my skills through hands-on projects.
 
 - 💻 Full-Stack Web Development
 - 🔥 Laravel & PHP
 - ⚡ Next.js, React & TypeScript
 - 🐳 Docker & containerized development
-- 🐧 Linux enthusiast
-- 🗄️ Database design & backend development
-- ☁️ Learning cloud deployment and system architecture
+- 🐧 Linux development environment
+- 🗄️ Backend & database development
+- ☁️ Exploring cloud deployment
+- 🧠 Learning system design and software architecture
 
 ---
 
@@ -38,9 +41,7 @@ how real-world software systems are designed, deployed, and maintained.
 
 <div align="center">
 
-<!-- LANGUAGES_START -->
-Loading...
-<!-- LANGUAGES_END -->
+<img src="./generated/languages.svg" alt="Languages" />
 
 </div>
 
@@ -48,17 +49,7 @@ Loading...
 
 <div align="center">
 
-<!-- FRAMEWORKS_START -->
-Loading...
-<!-- FRAMEWORKS_END -->
-
-</div>
-
-### Tools & Platforms
-
-<div align="center">
-
-<img src="./generated/tools.svg" alt="Tools" />
+<img src="./generated/frameworks.svg" alt="Frameworks and Technologies" />
 
 </div>
 
@@ -66,83 +57,25 @@ Loading...
 
 # 📊 Technology Usage
 
-<div align="center">
+The statistics above are automatically calculated from my repositories.
 
-<img src="./generated/technology-stats.svg" alt="Technology Statistics" />
-
-</div>
-
-> Percentages are calculated automatically from my public repositories.
-
----
-
-# 📈 GitHub Statistics
-
-<div align="center">
-
-<img height="170" src="https://github-readme-stats.vercel.app/api?username=rakayriii&show_icons=true&theme=tokyonight&hide_border=true&rank_icon=github" />
-
-<img height="170" src="https://github-readme-stats.vercel.app/api/top-langs/?username=rakayriii&layout=compact&theme=tokyonight&hide_border=true" />
-
-</div>
-
----
-
-# 🔥 Contribution Activity
-
-<div align="center">
-
-<img src="https://github-readme-streak-stats.herokuapp.com/?user=rakayriii&theme=tokyonight&hide_border=true" />
-
-</div>
-
----
-
-# 🚀 Featured Projects
-
-### 🎮 GameVault
-
-Gaming marketplace platform for buying and selling digital game accounts.
-
-**Stack**
-
-`Laravel` `PHP` `MySQL` `Tailwind CSS` `Docker`
-
----
-
-### 🛍️ Revolve
-
-Fashion e-commerce platform focused on shoes, clothes, pants,
-and jackets with seller functionality.
-
-**Stack**
-
-`Laravel` `PHP` `MySQL` `Docker`
-
----
-
-### 🎓 SchoolEvent
-
-School event management platform with authentication,
-event management, and API functionality.
-
-**Stack**
-
-`Laravel` `PHP` `MySQL` `Sanctum` `Breeze`
-
----
-
-# 🧠 Currently Learning
+When I build a project using a new language, framework, or technology,
+the technology can automatically appear in this section after the next scan.
 
 ```text
-Backend Architecture
-        ↓
-Database Design
-        ↓
-REST API Development
-        ↓
-System Design
-        ↓
-Docker & Deployment
-        ↓
-Cloud Infrastructure
+New Project
+     │
+     ▼
+GitHub Repository
+     │
+     ▼
+Technology Detection
+     │
+     ▼
+Statistics Calculation
+     │
+     ▼
+SVG Generation
+     │
+     ▼
+README Update
