@@ -2,9 +2,17 @@ name: Update Technology Stack
 
 on:
   workflow_dispatch:
+
+  schedule:
+    # Update setiap 30 menit
+    - cron: "*/30 * * * *"
+
   push:
     branches:
       - main
+    paths-ignore:
+      - "generated/**"
+      - "README.md"
 
 permissions:
   contents: write
