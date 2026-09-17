@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
   schedule:
-    # Update setiap 30 menit
+    # Jalan setiap 30 menit
     - cron: "*/30 * * * *"
 
   push:
@@ -17,27 +17,57 @@ on:
 permissions:
   contents: write
 
+# Mencegah dua workflow jalan bersamaan
+concurrency:
+  group: update-tech-stack
+  cancel-in-progress: true
+
 jobs:
   generate:
     name: Generate Tech Stack
     runs-on: ubuntu-latest
 
     steps:
+      # ==================================================
+      # CHECKOUT
+      # ==================================================
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # ==================================================
+      # SYNC DENGAN REMOTE SEBELUM GENERATE
+      # ==================================================
+
+      - name: Sync with latest main
+        run: |
+          git config pull.rebase true
+          git pull --rebase origin main
+
+      # ==================================================
+      # PYTHON
+      # ==================================================
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
+      # ==================================================
+      # GENERATE
+      # ==================================================
+
       - name: Generate technology statistics
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python scripts/generate-tech-stack.py
+
+      # ==================================================
+      # COMMIT & PUSH
+      # ==================================================
 
       - name: Commit generated files
         run: |
@@ -52,7 +82,5 @@ jobs:
           fi
 
           git commit -m "chore: update technology statistics"
-
-          git pull --rebase origin main
 
           git push origin HEAD:main
