@@ -20,7 +20,7 @@
 <rect x="280" y="236" width="430" height="12" rx="6" fill="#21262d"/>
 <rect x="280" y="236" width="67.7" height="12" rx="6" fill="#777BB4"/>
 <text x="735" y="249" fill="#f0f6fc" font-family="Arial, sans-serif" font-size="15" font-weight="700">15.7%</text>
-<g transform="translate(35,291) scale(1.1666666666666667)"><path fill="#1572B6" d="M1.5 0h21l-1.91 21.563L11.977 24l-8.565-2.438L1.5 0zm17.09 4.413L5.41 4.41l.213 2.622 10.125.002-.255 2.716h-6.64l.24 2.573h6.182l-.366 3.523-2.91.804-2.956-.81-.188-2.11h-2.61l.29 3.855L12 19.288l5.373-1.53L18.59 4.414z"/></g>
+
 <text x="78" y="313" fill="#c9d1d9" font-family="Arial, sans-serif" font-size="16" font-weight="600">CSS</text>
 <rect x="280" y="300" width="430" height="12" rx="6" fill="#21262d"/>
 <rect x="280" y="300" width="14.1" height="12" rx="6" fill="#1572B6"/>
@@ -35,7 +35,7 @@
 <rect x="280" y="428" width="430" height="12" rx="6" fill="#21262d"/>
 <rect x="280" y="428" width="6.5" height="12" rx="6" fill="#58A6FF"/>
 <text x="735" y="441" fill="#f0f6fc" font-family="Arial, sans-serif" font-size="15" font-weight="700">1.5%</text>
-<g transform="translate(35,483) scale(1.1666666666666667)"><path fill="#58A6FF" d="M11.769.066L.067 23.206l12.76-10.843zM23.207 23.934L7.471 17.587 0 23.934zM24 23.736L12.298.463l1.719 19.24zM12.893 12.959l-5.025 4.298 5.62 2.248z"/></g>
+
 <text x="78" y="505" fill="#c9d1d9" font-family="Arial, sans-serif" font-size="16" font-weight="600">CMake</text>
 <rect x="280" y="492" width="430" height="12" rx="6" fill="#21262d"/>
 <rect x="280" y="492" width="5.1" height="12" rx="6" fill="#58A6FF"/>
