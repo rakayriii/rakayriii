@@ -5,7 +5,7 @@
 <rect x="280" y="44" width="430" height="12" rx="6" fill="#21262d"/>
 <rect x="280" y="44" width="158.4" height="12" rx="6" fill="#3178C6"/>
 <text x="735" y="57" fill="#f0f6fc" font-family="Arial, sans-serif" font-size="15" font-weight="700">36.8%</text>
-<g transform="translate(35,99) scale(1.1666666666666667)"><path fill="#58A6FF" d="M4.105 4.105S9.158 1.58 11.684.316a3.079 3.079 0 0 1 1.481-.315c.766.047 1.677.788 1.677.788L24 9.948v9.789h-4.263V24H9.789l-9-9C.303 14.5 0 13.795 0 13.105c0-.319.18-.818.316-1.105l3.789-7.895zm.679.679v11.787c.002.543.021 1.024.498 1.508L10.204 23h8.533v-4.263L4.784 4.784zm12.055-.678c-.899-.896-1.809-1.78-2.74-2.643-.302-.267-.567-.468-1.07-.462-.37.014-.87.195-.87.195L6.341 4.105l10.498.001z"/></g>
+
 <text x="78" y="121" fill="#c9d1d9" font-family="Arial, sans-serif" font-size="16" font-weight="600">Dart</text>
 <rect x="280" y="108" width="430" height="12" rx="6" fill="#21262d"/>
 <rect x="280" y="108" width="80.4" height="12" rx="6" fill="#58A6FF"/>
@@ -25,7 +25,7 @@
 <rect x="280" y="300" width="430" height="12" rx="6" fill="#21262d"/>
 <rect x="280" y="300" width="42.6" height="12" rx="6" fill="#777BB4"/>
 <text x="735" y="313" fill="#f0f6fc" font-family="Arial, sans-serif" font-size="15" font-weight="700">9.9%</text>
-<g transform="translate(35,355) scale(1.1666666666666667)"><path fill="#1572B6" d="M1.5 0h21l-1.91 21.563L11.977 24l-8.565-2.438L1.5 0zm17.09 4.413L5.41 4.41l.213 2.622 10.125.002-.255 2.716h-6.64l.24 2.573h6.182l-.366 3.523-2.91.804-2.956-.81-.188-2.11h-2.61l.29 3.855L12 19.288l5.373-1.53L18.59 4.414z"/></g>
+
 <text x="78" y="377" fill="#c9d1d9" font-family="Arial, sans-serif" font-size="16" font-weight="600">CSS</text>
 <rect x="280" y="364" width="430" height="12" rx="6" fill="#21262d"/>
 <rect x="280" y="364" width="8.9" height="12" rx="6" fill="#1572B6"/>
